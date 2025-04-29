@@ -1,29 +1,35 @@
 <?php
-header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json");
+// proxy.php
 
-$apiKey = "EIAJO8OXS2GX0NNF";
+header('Access-Control-Allow-Origin: *');
+header('Content-Type: application/json');
 
-if (!isset($_POST['function'])) {
-    http_response_code(400);
-    echo json_encode(["error" => "No function specified."]);
-    exit;
+$apiKey = 'NWJ40W4ZRG7R802I'; // jouw echte Alpha Vantage API key
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $function = $_POST['function'] ?? '';
+    $symbol = $_POST['symbol'] ?? 'SLS';
+    $from = $_POST['from_currency'] ?? 'USD';
+    $to = $_POST['to_currency'] ?? 'EUR';
+
+    $url = '';
+
+    if ($function === 'GLOBAL_QUOTE') {
+        $url = "https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=$symbol&apikey=$apiKey";
+    } elseif ($function === 'CURRENCY_EXCHANGE_RATE') {
+        $url = "https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=$from&to_currency=$to&apikey=$apiKey";
+    } else {
+        echo json_encode(['error' => 'Ongeldige functie.']);
+        exit;
+    }
+
+    $response = file_get_contents($url);
+    if ($response === false) {
+        echo json_encode(['error' => 'API-aanvraag mislukt.']);
+    } else {
+        echo $response;
+    }
+} else {
+    echo json_encode(['error' => 'Alleen POST-verzoeken toegestaan.']);
 }
-
-$url = "https://www.alphavantage.co/query?" . http_build_query($_POST) . "&apikey=" . $apiKey;
-
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, $url);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-$response = curl_exec($ch);
-
-if (curl_errno($ch)) {
-    http_response_code(500);
-    echo json_encode(["error" => curl_error($ch)]);
-    exit;
-}
-
-curl_close($ch);
-
-echo $response;
 ?>
